@@ -1,1 +1,2 @@
-# Tiger Compiler \n Tiger Compiler files
+# Tiger Compiler
+Tiger Compiler chapter files.
