@@ -3,14 +3,12 @@
 #include "util.h"
 #include "errormsg.h"
 
-int yylex(void); /* function prototype */
+int yylex(void);
 
-void yyerror(char *s)
-{
+void yyerror(char *s) {
  EM_error(EM_tokPos, "%s", s);
 }
 %}
-
 
 %union {
 	int pos;
@@ -20,7 +18,6 @@ void yyerror(char *s)
 
 %token <sval> ID STRING
 %token <ival> INT
-
 %token
   COMMA COLON SEMICOLON LPAREN RPAREN LBRACK RBRACK
   LBRACE RBRACE DOT
@@ -29,9 +26,13 @@ void yyerror(char *s)
   ARRAY IF THEN ELSE WHILE FOR TO DO LET IN END OF
   BREAK NIL
   FUNCTION VAR TYPE
-  UMINUS
 
 %start program
+%nonassoc OF DO
+%nonassoc THEN
+%nonassoc ELSE
+%left SEMICOLON
+%left ASSIGN
 %left OR
 %left AND
 %nonassoc EQ NEQ LT LE GT GE
@@ -39,103 +40,128 @@ void yyerror(char *s)
 %left TIMES DIVIDE
 %left UMINUS
 
-
 %%
 
-/* This is a skeleton grammar file, meant to illustrate what kind of
- * declarations are necessary above the %% mark.  Students are expected
- *  to replace the two dummy productions below with an actual grammar.
- */
+program
+  : exp
+  ;
 
-program:	exp;
+exp
+  : LET decs IN expsec END
+  | STRING
+  | INT
+  | NIL
+  | assignment
+  | ID LBRACK exp RBRACK OF exp
+  | ID LBRACE recdecs RBRACE
+  | ID LPAREN params RPAREN
+  | ID LPAREN RPAREN
+  | lval
+  | arithmetic_expression
+  | boolean_expression
+  | comparison
+  | LPAREN expsec RPAREN
+  | MINUS exp %prec UMINUS
+  | iteration
+  | conditional
+  | BREAK
+  ;
 
-exp:  ID                       {/* id */}
-    | STRING                   {/* string (change to string when linkng with yylex) */}
-    | INT                      {/* int literal */}
-    | NIL                      {/* nil */}
-    | lval                     {/* lval */}
-    | MINUS exp  %prec UMINUS  {/* unary minus */}
-    | exp PLUS exp             {/* addition */}
-    | exp MINUS exp            {/* minus */}
-    | exp TIMES exp            {/* times */}
-    | exp DIVIDE exp           {/* divide */}
-    | exp EQ exp               {/* equals */}
-    | exp NEQ exp              {/* not equals */}
-    | exp GT exp               {/* greater than */}
-    | exp LT exp               {/* less than */}
-    | exp GE exp               {/* greater than */}
-    | exp LE exp               {/* less than */}
-    | exp AND exp              {/* and */}
-    | exp OR exp               {/* or */}
-    | id LBRACE reclist RBRACE {/* id{exp{,exp} */}
-    | LPAREN plist RPAREN      {/* (plist)  */}
-    | LET decs IN expseq       {/* let decs in expseq */}
-    | lval ASSIGN exp          {/* lval assign to exp */}
-    | lval ASSIGN exp          {/* lval := exp */}
-    | IF exp THEN exp ELSE exp {/* if exp then exp else exp */}
-    | IF exp THEN exp          {/* if exp then exp */}
-    | WHILE exp DO exp                 {/* while exp do exp */}
-    | FOR id ASSIGN exp TO exp DO exp  {/* for id := to exp do exp */}
-    | id LBRACK exp RBRACK OF exp      {/* id[exp] of exp */}
-    ;
+iteration
+  : WHILE exp DO exp
+  | FOR ID ASSIGN exp TO exp DO exp
+  ;
 
-decs:  dec decs                 {}
-     |  %empty
-     ;
+conditional
+  : IF exp THEN exp ELSE exp
+  | IF exp THEN exp
+  ;
 
-dec:  tydec                      {}
-    | vardec                     {}
-    | funcdec                    {}
-    ;
+arithmetic_expression
+  : exp PLUS exp
+  | exp MINUS exp
+  | exp TIMES exp
+  | exp DIVIDE exp
+  ;
 
-tydec: TYPE id EQ ty             {}
-      ;
+boolean_expression
+  : exp EQ exp
+  | exp NEQ exp
+  | exp GT exp
+  | exp LT exp
+  | exp GE exp
+  | exp LE exp
+  ;
 
-ty:  id                          {}
-   | LBRACE tyfields RBRACE      {}
-   | LBRACE RBRACE               {}
-   ;
+comparison
+  : exp AND exp
+  | exp OR exp
+  ;
 
-tyfields: id COLON id cmma       {}
-        ;
+assignment
+  : lval ASSIGN exp
+  ;
 
-cmma:  COMMA tyfields            {}
-     | %empty
-     ;
+recdecs
+  : recdecs COMMA ID EQ exp
+  | ID EQ exp
+  | %empty
+  ;
 
+lval
+  : ID lvalue_tail
+  ;
 
-vardec:  VAR id rettype ASSIGN exp  {}
-       ;
+lvalue_tail
+  : %empty
+  | DOT ID lvalue_tail
+  | LBRACK exp RBRACK lvalue_tail
 
-rettype:  COLON id               {}
-        | %empty
-        ;
+expsec
+  : expsec exp SEMICOLON
+  | %empty
+  ;
 
-funcdec:  FUNCTION id LPAREN tyfields RPAREN rettype EQ exp     {/*MIGHT NEED TO REWRITE TO SPECIFY FUNC VS PROCEDURE*/}
-        ;
+params
+  : params COMMA exp
+  | exp
+  ;
+decs
+  : decs dec
+  | %empty
+  ;
 
-lval:  id                      {}
-     | lval DOT id             {}
-     | lval LBRACK exp RBRACK  {}
-     ;
+dec
+  : tydec
+  | vardec
+  | funcdec
+  ;
 
+tydec
+  : TYPE ID EQ ty
+  ;
 
-plist:  exp SEMICOLON exp SEMICOLON plistitem {/*exp list inside paren exp*/}
-      | %empty
-      ;
+ty
+  : ID
+  | LBRACE tyfields RBRACE
+  | ARRAY OF ID
+  ;
 
-plistitem:  exp SEMICOLON plistitem {}
-          | %empty
-          ;
+tyfields
+  : tyfields COMMA ID COLON ID
+  | ID COLON ID
+  | %empty
+  ;
 
-reclist:  id EQ exp recend       {/*record declaration list */}
-        | %empty
-        ;
+vardec
+  : VAR ID returntype ASSIGN exp
+  ;
 
-recend:  COMMA reclist           {}
-       | %empty
-       ;
+returntype
+  : COLON ID
+  | %empty
+  ;
 
-expseq:  exp SEMICOLON expseq    {/*exp sequence*/}
-       | %empty
-       ;
+funcdec
+  : FUNCTION ID LPAREN tyfields RPAREN returntype EQ exp
+  ;
