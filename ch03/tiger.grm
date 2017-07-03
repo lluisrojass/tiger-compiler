@@ -1,0 +1,203 @@
+%{
+#include <stdio.h>
+#include "util.h"
+#include "errormsg.h"
+#define YYDEBUG 1
+
+int yylex(void);
+
+void yyerror(char *s) {
+ EM_error(EM_tokPos, "%s", s);
+}
+%}
+
+%union {
+	int pos;
+	int ival;
+	string sval;
+}
+
+%token <sval> ID 257
+%token <sval> STR 258 
+%token <ival> INT 259
+%token COMMA 260
+%token COLON 261
+%token SEMICOLON 262
+%token LPAREN 263
+%token RPAREN 264
+%token LBRACK 265
+%token RBRACK 266
+%token LBRACE 267
+%token RBRACE 268
+%token DOT 269
+%token PLUS 270
+%token MINUS 271
+%token TIMES 272
+%token DIVIDE 273
+%token EQ 274
+%token NEQ 275
+%token LT 276
+%token LE 277
+%token GT 278
+%token GE 279 
+%token AND 280
+%token OR 281
+%token ASSIGN 282
+%token ARRAY 283
+%token IF 284
+%token THEN 285
+%token ELSE 286
+%token WHILE 287
+%token FOR 288
+%token TO 289
+%token DO 290
+%token LET 291
+%token IN 292
+%token END 293
+%token OF 294
+%token BREAK 295
+%token NIL 296
+%token FUNCTION 297 
+%token VAR 298
+%token TYPE 299
+
+%define parse.error verbose
+%start program
+
+%nonassoc OF DO
+%nonassoc THEN
+%nonassoc ELSE
+%left SEMICOLON
+%left ASSIGN
+%left OR
+%left AND
+%nonassoc EQ NEQ LT LE GT GE
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left UMINUS
+%%
+
+program
+  : exp
+  ;
+
+exp
+  : LET decs IN expsec END
+  | STR
+  | INT
+  | NIL
+  | assignment
+  | ID LBRACK exp RBRACK OF exp
+  | ID LBRACE recdecs RBRACE
+  | ID LPAREN params RPAREN
+  | ID LPAREN RPAREN
+  | lval
+  | arithmetic_expression
+  | boolean_expression
+  | comparison
+  | LPAREN expsec RPAREN
+  | MINUS exp %prec UMINUS
+  | iteration
+  | conditional
+  | BREAK
+  ;
+
+iteration
+  : WHILE exp DO exp
+  | FOR ID ASSIGN exp TO exp DO exp
+  ;
+
+conditional
+  : IF exp THEN exp ELSE exp
+  | IF exp THEN exp
+  ;
+
+arithmetic_expression
+  : exp PLUS exp
+  | exp MINUS exp
+  | exp TIMES exp
+  | exp DIVIDE exp
+  ;
+
+boolean_expression
+  : exp EQ exp
+  | exp NEQ exp
+  | exp GT exp
+  | exp LT exp
+  | exp GE exp
+  | exp LE exp
+  ;
+
+comparison
+  : exp AND exp
+  | exp OR exp
+  ;
+
+assignment
+  : lval ASSIGN exp
+  ;
+
+recdecs
+  : recdecs COMMA ID EQ exp
+  | ID EQ exp
+  | %empty
+  ;
+
+lval
+  : ID lvalue_tail
+  ;
+
+lvalue_tail
+  : %empty
+  | DOT ID lvalue_tail
+  | LBRACK exp RBRACK lvalue_tail
+  ;
+
+expsec
+  : expsec exp SEMICOLON
+  | %empty
+  ;
+
+params
+  : params COMMA exp
+  | exp
+  ;
+decs
+  : decs dec
+  | %empty
+  ;
+
+dec
+  : tydec
+  | vardec
+  | funcdec
+  ;
+
+tydec
+  : TYPE ID EQ ty
+  ;
+
+ty
+  : ID
+  | LBRACE tyfields RBRACE
+  | ARRAY OF ID
+  ;
+
+tyfields
+  : tyfields COMMA ID COLON ID
+  | ID COLON ID
+  | %empty
+  ;
+
+vardec
+  : VAR ID returntype ASSIGN exp
+  ;
+
+returntype
+  : COLON ID
+  | %empty
+  ;
+
+funcdec
+  : FUNCTION ID LPAREN tyfields RPAREN returntype EQ exp
+  ;
