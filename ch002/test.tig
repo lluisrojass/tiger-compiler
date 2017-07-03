@@ -1,3 +1,0 @@
-var j = 9+90;
-var j = /* hello motto */ 90;
-j = 90++;
