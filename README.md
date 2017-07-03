@@ -3,6 +3,6 @@ Files for the language built from [Modern Compiler Implementation in C by Andrew
 
 <a href="/ch02">Chapter 1</a> can be ignored.
 
-<a href="/ch02">Chapter 2</a> deals with the lexical analyser generation using LEX.
+<a href="/ch02">Chapter 2</a> deals with the lexical analyzer generation using LEX.
 
 <a href="/ch03">Chapter 3</a> deals with parsing using bison/YACC and contains the Grammar used in the Tiger language.
