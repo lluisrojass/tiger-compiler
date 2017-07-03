@@ -1,5 +1,5 @@
 # Tiger Compiler
-the language built from [Modern Compiler Implementation in C by Andrew Appel](https://www.amazon.com/Modern-Compiler-Implementation-Andrew-Appel/dp/0521607655)
+Files for the language built from [Modern Compiler Implementation in C by Andrew Appel](https://www.amazon.com/Modern-Compiler-Implementation-Andrew-Appel/dp/0521607655)
 
 <a href="/ch02">Chapter 1</a> can be ignored.
 
